@@ -3,7 +3,6 @@
 #include <string.h>
 #include "types.h"
 
-
 static char *getID(int i)
 {
     // translate from 1,2,3, .. ,500+ vertex A,B,C,..,Z,AA,AB,...
@@ -27,11 +26,13 @@ static char *getID(int i)
 
     return buffer;
 }
+
 struct cell {
     int vertex;
     float probability;
     struct cell *next;
 };
+
 struct list {
     struct cell *head;
 };
@@ -125,3 +126,4 @@ void print_adjacency_list(const struct t_adjacency_list *p_adjacency_list) {
         display_list(&p_adjacency_list->lists[i]);
     }
 }
+
