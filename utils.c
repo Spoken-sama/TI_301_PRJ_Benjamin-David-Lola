@@ -27,23 +27,11 @@ static char *getID(int i)
     return buffer;
 }
 
-struct cell {
-    int vertex;
-    float probability;
-    struct cell *next;
-};
 
-struct list {
-    struct cell *head;
-};
 
-struct t_adjacency_list {
-    struct list *lists;
-    int size;
-};
-
-struct cell *create_cell(int to, float probability) {
-    struct cell *new_cell = (struct cell *)malloc(sizeof(struct cell));
+//Graph functions
+cell *create_cell(int to, float probability) {
+    cell *new_cell = (cell *)malloc(sizeof(cell));
     if (new_cell == NULL) {
         perror("Error allocating memory for cell");
         return NULL;
@@ -54,14 +42,14 @@ struct cell *create_cell(int to, float probability) {
     return new_cell;
 }
 
-struct list create_empty_list() {
-    struct list new_list;
+list create_empty_list() {
+    list new_list;
     new_list.head = NULL;
     return new_list;
 }
 
-void add_cell_to_list(struct list *lst, int to, float probability) {
-    struct cell *new_cell = create_cell(to, probability);
+void add_cell_to_list(list *lst, int to, float probability) {
+    cell *new_cell = create_cell(to, probability);
     if (new_cell == NULL) {
         return;
     }
@@ -69,8 +57,8 @@ void add_cell_to_list(struct list *lst, int to, float probability) {
     lst->head = new_cell;
 }
 
-void display_list(const struct list *lst) {
-    struct cell *current = lst->head;
+void display_list(const list *lst) {
+    cell *current = lst->head;
     while (current != NULL) {
         printf("-> (%d, %.2f) ", current->vertex, current->probability);
         current = current->next;
@@ -78,10 +66,10 @@ void display_list(const struct list *lst) {
     printf("\n");
 }
 
-struct t_adjacency_list create_empty_adjacency_list(int size) {
-    struct t_adjacency_list adj_list;
+t_adjacency_list create_empty_adjacency_list(int size) {
+    t_adjacency_list adj_list;
     adj_list.size = size;
-    adj_list.lists = (struct list *)malloc(size * sizeof(struct list));
+    adj_list.lists = (list *)malloc(size * sizeof(list));
     if (adj_list.lists == NULL) {
         perror("Error allocating memory for adjacency list");
         adj_list.size = 0;
@@ -93,37 +81,196 @@ struct t_adjacency_list create_empty_adjacency_list(int size) {
     return adj_list;
 }
 
-void extract_from_file(const char *file_path, struct t_adjacency_list *p_adjacency_list) {
+t_adjacency_list extract_from_file(const char *file_path) {
     FILE *file = fopen(file_path, "r");
     if (file == NULL) {
         perror("Error opening file");
-        return;
+        exit(EXIT_FAILURE);
     }
 
     int num_nodes;
     if (fscanf(file, "%d", &num_nodes) != 1) {
         perror("Error reading number of nodes");
         fclose(file);
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    *p_adjacency_list = create_empty_adjacency_list(num_nodes);
+    t_adjacency_list adjacency_list = create_empty_adjacency_list(num_nodes);
 
     int from, to;
     float weight;
     while (fscanf(file, "%d %d %f", &from, &to, &weight) == 3) {
         from--;
         to--;
-        add_cell_to_list(&p_adjacency_list->lists[from], to, weight);
+        add_cell_to_list(&adjacency_list.lists[from], to, weight);
     }
 
     fclose(file);
+    return adjacency_list;
 }
 
-void print_adjacency_list(const struct t_adjacency_list *p_adjacency_list) {
+void print_adjacency_list(const t_adjacency_list *p_adjacency_list) {
     for (int i = 0; i < p_adjacency_list->size; i++) {
         printf("List for vertex %d: [head @] ", i + 1);
         display_list(&p_adjacency_list->lists[i]);
     }
 }
 
+
+//Tarjan vertex functions
+
+t_tarjan_vertex *create_tarjan_vertex_array(const t_adjacency_list *p_adjacency_list) {
+    t_tarjan_vertex *tarjan_vertices = (t_tarjan_vertex *)malloc(p_adjacency_list->size * sizeof(t_tarjan_vertex));
+    if (!tarjan_vertices) {
+        perror("Error allocating memory for Tarjan vertices");
+        exit(EXIT_FAILURE);
+    }
+    for (int i = 0; i < p_adjacency_list->size; i++) {
+        tarjan_vertices[i].id = i;
+        tarjan_vertices[i].tmp_numbering = -1;
+        tarjan_vertices[i].low_link = -1;  // Updated field name
+        tarjan_vertices[i].on_stack = 0;
+        tarjan_vertices[i].grp_id = -1; // Initialize new field
+    }
+    return tarjan_vertices;
+}
+
+void print_tarjan_vertices(const t_tarjan_vertex *tarjan_vertices, int size) {
+    for (int i = 0; i < size; i++) {
+        printf("Vertex %d: index=%d, tmp_numbering=%d, grp_id=%d, on_stack=%d\n",
+               i + 1,
+               tarjan_vertices[i].id,
+               tarjan_vertices[i].tmp_numbering,
+               tarjan_vertices[i].grp_id,
+               tarjan_vertices[i].on_stack
+               );
+    }
+}
+
+
+
+
+
+
+//Partition functions
+
+t_class create_empty_class(int id) {
+    t_class new_class;
+    new_class.id = id;
+    new_class.vertices = NULL;
+    new_class.size = 0;
+    return new_class;
+}
+
+t_partition create_empty_partition() {
+    t_partition partition;
+    partition.size = 0;
+    partition.classes = malloc(partition.size * sizeof(t_class));
+    if (!partition.classes) {
+        perror("Error allocating memory for partition classes");
+        exit(EXIT_FAILURE);
+    }
+    return partition;
+}
+
+void add_class_to_partition(t_partition *partition, t_class new_class) {
+    partition->classes = realloc(partition->classes, (partition->size + 1) * sizeof(t_class));
+    if (!partition->classes) {
+        perror("Error reallocating memory for partition classes");
+        exit(EXIT_FAILURE);
+    }
+    partition->classes[partition->size] = new_class;
+    partition->size++;
+}
+
+t_stack *create_stack(int size) {
+    t_stack *s = malloc(sizeof(t_stack));
+    s->items = malloc(size * sizeof(t_tarjan_vertex *));
+    s->top = 0;
+    s->capacity = size;
+    return s;
+}
+
+void push_stack(t_stack *s, t_tarjan_vertex *v) {
+    if (s->top >= s->capacity) {
+        perror("Stack overflow");
+        exit(EXIT_FAILURE);
+    }
+    s->items[s->top++] = v;
+}
+
+t_tarjan_vertex *pop_stack(t_stack *s) {
+    if (s->top == 0) return NULL;
+    return s->items[--s->top];
+}
+
+void parcours(int v, const t_adjacency_list *graph, t_tarjan_vertex *vertices,
+              t_stack *stack, t_partition *partition, int *index_counter) {
+    vertices[v].tmp_numbering = *index_counter;
+    vertices[v].low_link = *index_counter;
+    (*index_counter)++;
+
+    push_stack(stack, &vertices[v]);
+    vertices[v].on_stack = 1;
+
+    for (cell *c = graph->lists[v].head; c; c = c->next) {
+        int w = c->vertex;
+
+        if (vertices[w].tmp_numbering == -1) {
+            parcours(w, graph, vertices, stack, partition, index_counter);
+
+            if (vertices[w].low_link < vertices[v].low_link)
+                vertices[v].low_link = vertices[w].low_link;
+        } else if (vertices[w].on_stack) {
+            if (vertices[w].tmp_numbering < vertices[v].low_link)
+                vertices[v].low_link = vertices[w].tmp_numbering;
+        }
+    }
+
+    if (vertices[v].low_link == vertices[v].tmp_numbering) {
+        t_class new_class = create_empty_class(partition->size + 1);
+        t_tarjan_vertex *w_ptr;
+
+        do {
+            w_ptr = pop_stack(stack);
+            w_ptr->on_stack = 0;
+            w_ptr->grp_id = new_class.id;
+
+            new_class.size++;
+            new_class.vertices = realloc(new_class.vertices, new_class.size * sizeof(t_tarjan_vertex *));
+            if (!new_class.vertices) {
+                perror("Error reallocating memory for class vertices");
+                exit(EXIT_FAILURE);
+            }
+            new_class.vertices[new_class.size - 1] = w_ptr;
+        } while (w_ptr != &vertices[v]);
+
+        add_class_to_partition(partition, new_class);
+    }
+}
+
+t_partition tarjan(const t_adjacency_list *graph) {
+    t_partition partition = create_empty_partition();
+    t_tarjan_vertex *vertices = create_tarjan_vertex_array(graph);
+    t_stack *stack = create_stack(graph->size);
+    int index_counter = 0;
+
+    for (int v = 0; v < graph->size; v++) {
+        if (vertices[v].tmp_numbering == -1) {
+            parcours(v, graph, vertices, stack, &partition, &index_counter);
+        }
+    }
+
+    return partition;
+}
+
+void print_t_partition (const t_partition *partition) {
+    for (int i = 0; i < partition->size; i++) {
+        printf("Component C%d: Size: %d, Vertices: {", partition->classes[i].id, partition->classes[i].size);
+        for (int j = 0; j < partition->classes[i].size; j++) {
+            printf("%d", partition->classes[i].vertices[j]->id + 1);
+            if (j < partition->classes[i].size - 1) printf(",");
+        }
+        printf("}\n");
+    }
+}

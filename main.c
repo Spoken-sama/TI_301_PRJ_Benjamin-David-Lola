@@ -1,18 +1,19 @@
 #include <stdio.h>
+#include "stdlib.h"
 #include "utils.h"
+#include "types.h"
 
 int main() {
 
-    struct t_adjacency_list {
-        struct vertex **dynamic_array;
-        int size;
-    };
-    struct t_adjacency_list
+    //Graph
+    t_adjacency_list graph = extract_from_file("../data/exemple2.txt");
+    print_adjacency_list(&graph);
 
-    t_adjacency_list;
-    extract_from_file("../data/exemple1.txt", &t_adjacency_list);
-    print_adjacency_list(&t_adjacency_list);
+    //Create tarjan vertices
+    t_tarjan_vertex *vertices = create_tarjan_vertex_array(&graph);
+    //print_tarjan_vertices(vertices, graph.size);
 
-
-    return 0;
+    //Create partition
+    t_partition partition = tarjan(&graph);
+    print_t_partition(&partition);
 }
