@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <string.h>
 #include "types.h"
 
@@ -27,7 +28,55 @@ static char *getID(int i)
     return buffer;
 }
 
+void print_files_in_data_directory(const char *directory_path) {
+    DIR *dir = opendir(directory_path);
+    if (!dir) {
+        perror("Error opening directory");
+        return;
+    }
 
+    struct dirent *entry;
+    printf("Files in '%s':\n", directory_path);
+    int row = -1;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] != '.') {
+            printf("%d %s\n",row, entry->d_name);
+        }
+        row++;
+    }
+
+    closedir(dir);
+}
+char *get_row_file_path(const char *directory_path, int row) {
+    DIR *dir = opendir(directory_path);
+    if (!dir) {
+        perror("Error opening directory");
+        return NULL;
+    }
+
+    struct dirent *entry;
+    int current_row = -1;
+    char *file_path = NULL;
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] != '.') {
+            current_row++;
+            if (current_row == row) {
+                file_path = (char *)malloc(strlen(directory_path) + strlen(entry->d_name) + 2);
+                if (!file_path) {
+                    perror("Error allocating memory for file path");
+                    closedir(dir);
+                    return NULL;
+                }
+                sprintf(file_path, "%s/%s", directory_path, entry->d_name);
+                break;
+            }
+        }
+    }
+
+    closedir(dir);
+    return file_path;
+}
 
 //Graph functions
 cell *create_cell(int to, float probability) {

@@ -2,7 +2,8 @@
 #define UTILS_H
 
 #include "types.h"
-
+void print_files_in_data_directory(const char *directory_path);
+char *get_row_file_path(const char *directory_path, int row);
 void add_cell_to_list(list *lst, int to, float probability);
 void display_list(const list *lst);
 t_adjacency_list create_empty_adjacency_list(int size);
