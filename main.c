@@ -154,7 +154,7 @@ int main() {
                 if (diff_matrix) free(diff_matrix);
                 diff_matrix = diff(adj_matrix, multiplied_matrix);
                 printf("\nDifference matrix computed successfully.\n");
-                print_matrix(graph.size, diff_matrix);
+                print_matrix(sizeof diff_matrix, diff_matrix);
                 break;
             }
             case 10: {

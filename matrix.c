@@ -2,7 +2,7 @@
 #include "types.h"
 #include <stdlib.h>
 #include <stdio.h>
-
+#include "math.h"
 
 float **create_matrix(t_adjacency_list *graph) {
     int size = graph->size;
@@ -84,7 +84,7 @@ float **diff(float **matrix_a, float **matrix_b) {
     float total_diff = 0.0f;
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size+1; j++) {
-            total_diff = abs(matrix_a[i][j] - matrix_b[i][j]);
+            total_diff = fabs(matrix_a[i][j] - matrix_b[i][j]);
             result_matrix[i][j] = total_diff;
         }
     }
