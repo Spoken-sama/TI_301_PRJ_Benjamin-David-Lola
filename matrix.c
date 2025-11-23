@@ -7,13 +7,11 @@
 float **create_matrix(t_adjacency_list *graph) {
     int size = graph->size;
 
-    // Allocate memory for the adjacency matrix
     float **matrix = (float **)malloc(size * sizeof(float *));
     for (int i = 0; i < size; i++) {
         matrix[i] = (float *)calloc(size, sizeof(float));
     }
 
-    // Fill the adjacency matrix
     for (int i = 0; i < size; i++) {
         cell *current = graph->lists[i].head;
         while (current) {
@@ -99,7 +97,6 @@ float **multiply_n_times(int n, int size, float **matrix_a, float **matrix_b) {
         return NULL;
     }
 
-    // Copy matrix_b into temp_matrix as the initial matrix
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             temp_matrix[i][j] = matrix_b[i][j];
@@ -117,7 +114,6 @@ float **multiply_n_times(int n, int size, float **matrix_a, float **matrix_b) {
             return NULL;
         }
 
-        // Free the old temp_matrix and update it with the new result
         for (int i = 0; i < size; i++) {
             free(temp_matrix[i]);
         }

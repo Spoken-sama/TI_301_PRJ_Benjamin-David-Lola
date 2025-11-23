@@ -79,6 +79,7 @@ char *get_row_file_path(const char *directory_path, int row) {
 }
 
 //Graph functions
+
 cell *create_cell(int to, float probability) {
     cell *new_cell = (cell *)malloc(sizeof(cell));
     if (new_cell == NULL) {
@@ -177,9 +178,9 @@ t_tarjan_vertex *create_tarjan_vertex_array(const t_adjacency_list *p_adjacency_
     for (int i = 0; i < p_adjacency_list->size; i++) {
         tarjan_vertices[i].id = i;
         tarjan_vertices[i].tmp_numbering = -1;
-        tarjan_vertices[i].low_link = -1;  // Updated field name
+        tarjan_vertices[i].low_link = -1;
         tarjan_vertices[i].on_stack = 0;
-        tarjan_vertices[i].grp_id = -1; // Initialize new field
+        tarjan_vertices[i].grp_id = -1;
     }
     return tarjan_vertices;
 }

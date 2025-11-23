@@ -139,7 +139,7 @@ int main() {
                     }
                     free(multiplied_matrix);
                 }
-                multiplied_matrix = multiply_n_times(n, adj_matrix, adj_matrix);
+                multiplied_matrix = multiply_n_times(n,sizeof adj_matrix, adj_matrix, adj_matrix);
                 printf("\nMatrix multiplied %d times successfully.\n", n);
                 print_matrix(sizeof multiplied_matrix, multiplied_matrix);
                 break;
