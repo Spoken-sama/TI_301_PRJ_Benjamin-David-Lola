@@ -47,6 +47,7 @@ void print_files_in_data_directory(const char *directory_path) {
 
     closedir(dir);
 }
+
 char *get_row_file_path(const char *directory_path, int row) {
     DIR *dir = opendir(directory_path);
     if (!dir) {
@@ -324,3 +325,5 @@ void print_t_partition (const t_partition *partition) {
         printf("}\n");
     }
 }
+
+// push for david
