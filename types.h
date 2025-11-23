@@ -50,6 +50,7 @@ typedef struct s_t_link {
 
 typedef struct s_t_link_array {
     t_link *links;
+    int size;
     int log_size;
 } t_link_array;
 

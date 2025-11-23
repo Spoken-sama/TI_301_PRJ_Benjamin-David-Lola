@@ -158,4 +158,3 @@ t_matrix subMatrix(t_matrix matrix, t_partition part, int compo_index) {
     return submatrix;
 }
 
-//david push

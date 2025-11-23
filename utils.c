@@ -326,4 +326,69 @@ void print_t_partition (const t_partition *partition) {
     }
 }
 
-// push for david
+
+
+// Optional Part 2
+
+t_link_array create_empty_link_array() {
+    t_link_array arr;
+    arr.links = malloc(sizeof(t_link) * 4);
+    arr.size = 0;
+    arr.log_size = 4;
+    return arr;
+}
+
+void add_link(t_link_array *link_array, int from, int to) {
+    if (link_array->size >= link_array->log_size) {
+        link_array->log_size *= 2;
+        link_array->links = realloc(link_array->links, link_array->log_size * sizeof(t_link));
+        if (!link_array->links) {
+            perror("Error reallocating memory for links");
+            exit(EXIT_FAILURE);
+        }
+    }
+    link_array->links[link_array->size].from = from;
+    link_array->links[link_array->size].to = to;
+    link_array->size++;
+}
+
+int link_exists(t_link_array *link_array, int from, int to) {
+    for (int i = 0; i < link_array->size; i++) {
+        if (link_array->links[i].from == from && link_array->links[i].to == to)
+            return 1;
+    }
+    return 0;
+}
+
+t_link_array build_links(const t_adjacency_list *graph, const t_partition *partition) {
+    t_link_array link_array = create_empty_link_array();
+    int *class_of_vertex = malloc(graph->size * sizeof(int));
+
+    for (int i = 0; i < partition->size; i++) {
+        for (int j = 0; j < partition->classes[i].size; j++) {
+            int v = partition->classes[i].vertices[j]->id;
+            class_of_vertex[v] = partition->classes[i].id;
+        }
+    }
+
+    for (int v = 0; v < graph->size; v++) {
+        int Ci = class_of_vertex[v];
+        for (cell *c = graph->lists[v].head; c; c = c->next) {
+            int w = c->vertex;
+            int Cj = class_of_vertex[w];
+            if (Ci != Cj && !link_exists(&link_array, Ci, Cj)) {
+                add_link(&link_array, Ci, Cj);
+            }
+        }
+    }
+
+    free(class_of_vertex);
+    return link_array;
+}
+
+void print_hasse(const t_link_array *link_array) {
+    printf("graph TD\n");
+    for (int i = 0; i < link_array->size; i++) {
+        printf("C%d --> C%d\n", link_array->links[i].from, link_array->links[i].to);
+    }
+}

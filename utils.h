@@ -16,4 +16,10 @@ t_partition create_empty_partition();
 void add_class_to_partition(t_partition *partition, t_class new_class);
 void print_t_partition (const t_partition *partition);
 t_partition tarjan(const t_adjacency_list *graph);
+
+t_link_array create_empty_link_array();
+void add_link(t_link_array *link_array, int from, int to);
+int link_exists(t_link_array *link_array, int from, int to);
+t_link_array build_links(const t_adjacency_list *graph, const t_partition *partition);
+void print_hasse(const t_link_array *link_array);
 #endif // UTILS_H

@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "types.h"
 #include "matrix.h"
+#include "hasse.h"
 
 void display_menu() {
     printf("\n--- Menu ---\n");
@@ -16,7 +17,8 @@ void display_menu() {
     printf("8. Multiply matrix n times\n");
     printf("9. Compute difference matrix\n");
     printf("10. Extract submatrix for a component\n");
-    printf("11. Exit\n");
+    printf("11. Optional Part 2\n");
+    printf("12. Exit\n");
     printf("Enter your choice: ");
 }
 
@@ -174,8 +176,13 @@ int main() {
                 print_matrix(partition.classes[compo_index].size, submatrix);
                 break;
             }
-
-            case 11:
+            case 11: {
+                t_link_array links = build_links(&graph, &partition);
+                removeTransitiveLinks(&links);
+                print_hasse(&links);
+                break;
+            }
+            case 12:
                 printf("Exiting program.\n");
                 break;
             default:
