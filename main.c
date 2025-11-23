@@ -15,7 +15,8 @@ void display_menu() {
     printf("7. Multiply matrices\n");
     printf("8. Multiply matrix n times\n");
     printf("9. Compute difference matrix\n");
-    printf("10. Exit\n");
+    printf("10. Extract submatrix for a component\n");
+    printf("11. Exit\n");
     printf("Enter your choice: ");
 }
 
@@ -27,6 +28,7 @@ int main() {
     float **empty_matrix = NULL;
     float **multiplied_matrix = NULL;
     float **diff_matrix = NULL;
+    float **submatrix = NULL;
 
     int choice;
     char *path = NULL;
@@ -38,15 +40,17 @@ int main() {
         switch (choice) {
             case 1: {
                 if (path) free(path);
+                printf("\n");
                 print_files_in_data_directory("../data");
                 printf("Please enter the row number of the file you want to use: ");
                 int row;
                 scanf("%d", &row);
-                path = get_row_file_path("../data", row);
+                path = get_row_file_path("../data", row-1);
                 if (!path) {
                     fprintf(stderr, "Failed to construct file path.\n");
                     break;
                 }
+                printf("Extracted adjacency list from file: %s\n", path);
                 graph = extract_from_file(path);
                 printf("\nThis is our adjacency list:\n\n");
                 print_adjacency_list(&graph);
@@ -137,7 +141,7 @@ int main() {
                 }
                 multiplied_matrix = multiply_n_times(n, adj_matrix, adj_matrix);
                 printf("\nMatrix multiplied %d times successfully.\n", n);
-                print_matrix(graph.size, multiplied_matrix);
+                print_matrix(sizeof multiplied_matrix, multiplied_matrix);
                 break;
             }
             case 9: {
@@ -151,7 +155,27 @@ int main() {
                 print_matrix(graph.size, diff_matrix);
                 break;
             }
-            case 10:
+            case 10: {
+                if (!adj_matrix || !partition.classes) {
+                    printf("Create the adjacency matrix and partition first.\n");
+                    break;
+                }
+                int compo_index;
+                printf("Enter the component index: ");
+                scanf("%d", &compo_index);
+                if (submatrix) {
+                    for (int i = 0; i < partition.classes[compo_index].size; i++) {
+                        free(submatrix[i]);
+                    }
+                    free(submatrix);
+                }
+                submatrix = subMatrix(adj_matrix, partition, compo_index);
+                printf("\nSubmatrix for component %d extracted successfully.\n", compo_index);
+                print_matrix(partition.classes[compo_index].size, submatrix);
+                break;
+            }
+
+            case 11:
                 printf("Exiting program.\n");
                 break;
             default:
@@ -166,6 +190,6 @@ int main() {
     if (empty_matrix) free(empty_matrix);
     if (multiplied_matrix) free(multiplied_matrix);
     if (diff_matrix) free(diff_matrix);
-
+    if (submatrix) free(submatrix);
     return 0;
 }

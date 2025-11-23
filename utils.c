@@ -150,7 +150,7 @@ t_adjacency_list extract_from_file(const char *file_path) {
     float weight;
     while (fscanf(file, "%d %d %f", &from, &to, &weight) == 3) {
         from--;
-        to--;
+        to;
         add_cell_to_list(&adjacency_list.lists[from], to, weight);
     }
 

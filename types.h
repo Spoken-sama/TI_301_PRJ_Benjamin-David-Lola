@@ -24,13 +24,15 @@ typedef struct s_t_tarjan_vertex {
     int grp_id;
 } t_tarjan_vertex;
 
-struct s_class;
+
 
 typedef struct s_class {
     int id;
     t_tarjan_vertex **vertices;
     int size;
 } t_class;
+
+typedef float **t_matrix;
 
 typedef struct {
     t_class *classes;
@@ -42,6 +44,8 @@ typedef struct {
     int top;
     int capacity;
 } t_stack;
+
+
 
 typedef struct s_t_link {
     int from;

@@ -10,7 +10,7 @@ float **multiply_matrices(int size, float **matrix_a, float **matrix_b);
 float **multiply_n_times(int n,float **matrix_a, float **matrix_b);
 float **diff(float **matrix_a, float **matrix_b);
 void print_matrix(int size, float **matrix);
-
+t_matrix subMatrix(t_matrix matrix, t_partition part, int compo_index);
 
 
 #endif //INC_2526_TI301_PJT_MATRIX_H
