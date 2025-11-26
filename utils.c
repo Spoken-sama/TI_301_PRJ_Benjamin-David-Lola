@@ -152,7 +152,6 @@ t_adjacency_list extract_from_file(const char *file_path) {
     float weight;
     while (fscanf(file, "%d %d %f", &from, &to, &weight) == 3) {
         from--;
-        to;
         add_cell_to_list(&adjacency_list.lists[from], to, weight);
     }
 
@@ -185,19 +184,6 @@ t_tarjan_vertex *create_tarjan_vertex_array(const t_adjacency_list *p_adjacency_
     }
     return tarjan_vertices;
 }
-
-void print_tarjan_vertices(const t_tarjan_vertex *tarjan_vertices, int size) {
-    for (int i = 0; i < size; i++) {
-        printf("Vertex %d: index=%d, tmp_numbering=%d, grp_id=%d, on_stack=%d\n",
-               i + 1,
-               tarjan_vertices[i].id,
-               tarjan_vertices[i].tmp_numbering,
-               tarjan_vertices[i].grp_id,
-               tarjan_vertices[i].on_stack
-               );
-    }
-}
-
 
 
 

@@ -5,7 +5,7 @@
 #include "math.h"
 
 float **create_matrix(t_adjacency_list *graph) {
-    int size = graph->size;
+    int size = graph->size+1;
 
     float **matrix = (float **)malloc(size * sizeof(float *));
     for (int i = 0; i < size; i++) {
@@ -78,8 +78,7 @@ float **multiply_matrices(int size, float **matrix_a, float **matrix_b) {
     return result_matrix;
 }
 
-float **diff(float **matrix_a, float **matrix_b) {
-    int size = sizeof(matrix_a);
+float **diff(int size,float **matrix_a, float **matrix_b) {
     float **result_matrix = create_empty_matrix(size);
     float total_diff = 0.0f;
     for (int i = 0; i < size; i++) {
@@ -91,7 +90,7 @@ float **diff(float **matrix_a, float **matrix_b) {
     return result_matrix;
 }
 
-float **multiply_n_times(int n, int size, float **matrix_a, float **matrix_b) {
+float **multiply_n_times(int n, int size, float **matrix_b) {
     float **temp_matrix = create_empty_matrix(size);
     if (!temp_matrix) {
         return NULL;
@@ -104,7 +103,7 @@ float **multiply_n_times(int n, int size, float **matrix_a, float **matrix_b) {
     }
 
     for (int count = 0; count < n; count++) {
-        float **new_result = multiply_matrices(size, matrix_a, temp_matrix);
+        float **new_result = multiply_matrices(size, matrix_b, temp_matrix);
         if (!new_result) {
             perror("Error allocating memory for matrix multiplication");
             for (int i = 0; i < size; i++) {
@@ -148,13 +147,12 @@ t_matrix subMatrix(t_matrix matrix, t_partition part, int compo_index) {
     }
 
     for (int i = 0; i < sub_size; i++) {
-        int original_row = component.vertices[i]->id;
+        int original_row = component.vertices[i]->id - 1;
         for (int j = 0; j < sub_size; j++) {
-            int original_col = component.vertices[j]->id;
+            int original_col = component.vertices[j]->id - 1;
             submatrix[i][j] = matrix[original_row][original_col];
         }
     }
 
     return submatrix;
 }
-

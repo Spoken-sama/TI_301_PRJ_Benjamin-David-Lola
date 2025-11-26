@@ -28,7 +28,9 @@ int main() {
     t_partition partition = {0};
     float **adj_matrix = NULL;
     float **empty_matrix = NULL;
+    float **final_matrix = NULL;
     float **multiplied_matrix = NULL;
+    float **multiplied_matrix_n = NULL;
     float **diff_matrix = NULL;
     float **submatrix = NULL;
 
@@ -135,15 +137,15 @@ int main() {
                     printf("Invalid number of multiplications. Please enter a positive integer.\n");
                     break;
                 }
-                if (multiplied_matrix) {
+                if (multiplied_matrix_n) {
                     for (int i = 0; i < graph.size; i++) {
-                        free(multiplied_matrix[i]);
+                        free(multiplied_matrix_n[i]);
                     }
-                    free(multiplied_matrix);
+                    free(multiplied_matrix_n);
                 }
-                multiplied_matrix = multiply_n_times(n,sizeof adj_matrix, adj_matrix, adj_matrix);
+                multiplied_matrix_n = multiply_n_times(n,graph.size, adj_matrix);
                 printf("\nMatrix multiplied %d times successfully.\n", n);
-                print_matrix(sizeof multiplied_matrix, multiplied_matrix);
+                print_matrix(sizeof multiplied_matrix_n, multiplied_matrix_n);
                 break;
             }
             case 9: {
@@ -152,7 +154,7 @@ int main() {
                     break;
                 }
                 if (diff_matrix) free(diff_matrix);
-                diff_matrix = diff(adj_matrix, multiplied_matrix);
+                diff_matrix = diff(graph.size,adj_matrix, multiplied_matrix);
                 printf("\nDifference matrix computed successfully.\n");
                 print_matrix(sizeof diff_matrix, diff_matrix);
                 break;
@@ -184,7 +186,7 @@ int main() {
             }
             case 12:
                 printf("Exiting program.\n");
-                break;
+                return 0;
             default:
                 printf("Invalid choice. Please try again.\n");
         }
@@ -196,6 +198,7 @@ int main() {
     if (adj_matrix) free(adj_matrix);
     if (empty_matrix) free(empty_matrix);
     if (multiplied_matrix) free(multiplied_matrix);
+    if (multiplied_matrix_n) free(multiplied_matrix_n);
     if (diff_matrix) free(diff_matrix);
     if (submatrix) free(submatrix);
     return 0;
