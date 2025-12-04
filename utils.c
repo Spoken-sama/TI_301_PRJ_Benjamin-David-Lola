@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <string.h>
 #include "types.h"
+#include "math.h"
 
 static char *getID(int i)
 {
@@ -151,7 +152,8 @@ t_adjacency_list extract_from_file(const char *file_path) {
     int from, to;
     float weight;
     while (fscanf(file, "%d %d %f", &from, &to, &weight) == 3) {
-        from--;
+        from--; // Conversion 1-based -> 0-based
+        to--;   // AJOUTER CETTE LIGNE : Conversion 1-based -> 0-based
         add_cell_to_list(&adjacency_list.lists[from], to, weight);
     }
 
@@ -166,7 +168,53 @@ void print_adjacency_list(const t_adjacency_list *p_adjacency_list) {
     }
 }
 
+void generate_mermaid_file(const char *filename, const t_adjacency_list *graph) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        perror("Error opening file for writing");
+        return;
+    }
 
+    // 1. Print Configuration Header
+    fprintf(file, "---\n");
+    fprintf(file, "config:\n");
+    fprintf(file, " layout: elk\n");
+    fprintf(file, " theme: neo\n");
+    fprintf(file, " look: neo\n");
+    fprintf(file, "---\n");
+    fprintf(file, "flowchart LR\n");
+
+    // 2. Print Vertices: A((1))
+    // We iterate 0 to size, but display i+1
+    for (int i = 0; i < graph->size; i++) {
+        char node_id[20];
+        // We copy the result because getID returns a static buffer
+        strcpy(node_id, getID(i + 1));
+
+        fprintf(file, "%s((%d))\n", node_id, i + 1);
+    }
+
+    // 3. Print Edges: A -->|0.01|B
+    for (int i = 0; i < graph->size; i++) {
+        char src_id[20];
+        strcpy(src_id, getID(i + 1)); // Save Source ID
+
+        cell *current = graph->lists[i].head;
+        while (current != NULL) {
+            char dest_id[20];
+            strcpy(dest_id, getID(current->vertex + 1)); // Save Dest ID
+
+            // Print edge with weight
+            // Format: SRC -->|Weight| DEST
+            fprintf(file, "%s -->|%.2f|%s\n", src_id, current->probability, dest_id);
+
+            current = current->next;
+        }
+    }
+
+    fclose(file);
+    printf("Mermaid file generated: %s\n", filename);
+}
 //Tarjan vertex functions
 
 t_tarjan_vertex *create_tarjan_vertex_array(const t_adjacency_list *p_adjacency_list) {
@@ -185,6 +233,36 @@ t_tarjan_vertex *create_tarjan_vertex_array(const t_adjacency_list *p_adjacency_
     return tarjan_vertices;
 }
 
+#define EPSILON 0.001f // Marge de tolérance pour les comparaisons de float
+
+int is_graph_markovian(const t_adjacency_list *graph) {
+    if (!graph || graph->size == 0) {
+        printf("Error: Graph is empty or NULL.\n");
+        return 0;
+    }
+
+    for (int i = 0; i < graph->size; i++) {
+        float sum = 0.0f;
+        cell *current = graph->lists[i].head;
+
+        // Somme des probabilités des arcs sortants
+        while (current != NULL) {
+            sum += current->probability;
+            current = current->next;
+        }
+
+        // Vérification : |somme - 1.0| > epsilon
+        // Si la différence est trop grande, ce n'est pas markovien
+        if (fabs(sum - 1.0f) > EPSILON) {
+            // On affiche le sommet coupable pour aider au debug
+            // On utilise i+1 car vos sommets s'affichent généralement en 1-based
+            printf("Graph is NOT Markovian. Vertex %d has outgoing sum: %.4f\n", i + 1, sum);
+            return 0; // Faux
+        }
+    }
+
+    return 1; // Vrai
+}
 
 
 
@@ -202,12 +280,17 @@ t_class create_empty_class(int id) {
 t_partition create_empty_partition() {
     t_partition partition;
     partition.size = 0;
-    partition.classes = malloc(partition.size * sizeof(t_class));
-    if (!partition.classes) {
-        perror("Error allocating memory for partition classes");
-        exit(EXIT_FAILURE);
-    }
+    partition.classes = NULL; // Initialiser à NULL pour éviter des comportements indéfinis
     return partition;
+}
+
+void free_partition(t_partition *partition) {
+    for (int i = 0; i < partition->size; i++) {
+        free(partition->classes[i].vertices); // Libérer les sommets de chaque classe
+    }
+    free(partition->classes); // Libérer le tableau de classes
+    partition->classes = NULL;
+    partition->size = 0;
 }
 
 void add_class_to_partition(t_partition *partition, t_class new_class) {
@@ -301,12 +384,12 @@ t_partition tarjan(const t_adjacency_list *graph) {
     return partition;
 }
 
-void print_t_partition (const t_partition *partition) {
+void print_t_partition(const t_partition *partition) {
     for (int i = 0; i < partition->size; i++) {
         printf("Component C%d: Size: %d, Vertices: {", partition->classes[i].id, partition->classes[i].size);
         for (int j = 0; j < partition->classes[i].size; j++) {
-            printf("%d", partition->classes[i].vertices[j]->id + 1);
-            if (j < partition->classes[i].size - 1) printf(",");
+            printf("%d", partition->classes[i].vertices[j]->id + 1); // Ajuster l'indexation
+            if (j < partition->classes[i].size - 1) printf(", ");
         }
         printf("}\n");
     }
@@ -349,7 +432,12 @@ int link_exists(t_link_array *link_array, int from, int to) {
 t_link_array build_links(const t_adjacency_list *graph, const t_partition *partition) {
     t_link_array link_array = create_empty_link_array();
     int *class_of_vertex = malloc(graph->size * sizeof(int));
+    if (!class_of_vertex) {
+        perror("Error allocating memory for class_of_vertex");
+        exit(EXIT_FAILURE);
+    }
 
+    // Associer chaque sommet à sa classe
     for (int i = 0; i < partition->size; i++) {
         for (int j = 0; j < partition->classes[i].size; j++) {
             int v = partition->classes[i].vertices[j]->id;
@@ -357,6 +445,7 @@ t_link_array build_links(const t_adjacency_list *graph, const t_partition *parti
         }
     }
 
+    // Construire les liens entre les classes
     for (int v = 0; v < graph->size; v++) {
         int Ci = class_of_vertex[v];
         for (cell *c = graph->lists[v].head; c; c = c->next) {
@@ -371,7 +460,12 @@ t_link_array build_links(const t_adjacency_list *graph, const t_partition *parti
     free(class_of_vertex);
     return link_array;
 }
-
+void free_link_array(t_link_array *link_array) {
+    free(link_array->links);
+    link_array->links = NULL;
+    link_array->size = 0;
+    link_array->log_size = 0;
+}
 void print_hasse(const t_link_array *link_array) {
     printf("graph TD\n");
     for (int i = 0; i < link_array->size; i++) {

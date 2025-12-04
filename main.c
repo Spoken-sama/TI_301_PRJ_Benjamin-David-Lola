@@ -18,7 +18,10 @@ void display_menu() {
     printf("9. Compute difference matrix\n");
     printf("10. Extract submatrix for a component\n");
     printf("11. Optional Part 2\n");
-    printf("12. Exit\n");
+    printf("12. Build mermaid\n");
+    printf("13. Verify Markov property\n");
+    printf("14. Compute probability distribution after n steps\n");
+    printf("15. Exit\n");
     printf("Enter your choice: ");
 }
 
@@ -134,18 +137,20 @@ int main() {
                 printf("Enter the number of times to multiply the matrices: ");
                 scanf("%d", &n);
                 if (n <= 0) {
-                    printf("Invalid number of multiplications. Please enter a positive integer.\n");
+                    printf("Invalid number of multiplications.\n");
                     break;
                 }
-                if (multiplied_matrix_n) {
-                    for (int i = 0; i < graph.size; i++) {
-                        free(multiplied_matrix_n[i]);
-                    }
-                    free(multiplied_matrix_n);
-                }
-                multiplied_matrix_n = multiply_n_times(n,graph.size, adj_matrix);
+
+                // Nettoyage propre (utilisation de free_matrix ajoutée précédemment)
+                if (multiplied_matrix_n) free_matrix(multiplied_matrix_n, graph.size);
+
+                multiplied_matrix_n = multiply_n_times(n, graph.size, adj_matrix);
+
                 printf("\nMatrix multiplied %d times successfully.\n", n);
-                print_matrix(sizeof multiplied_matrix_n, multiplied_matrix_n);
+
+                // --- CORRECTION ICI ---
+                // Ne JAMAIS utiliser sizeof sur un pointeur dynamique
+                print_matrix(graph.size, multiplied_matrix_n);
                 break;
             }
             case 9: {
@@ -153,8 +158,9 @@ int main() {
                     printf("Create the adjacency matrix and multiplied matrix first.\n");
                     break;
                 }
-                if (diff_matrix) free(diff_matrix);
-                diff_matrix = diff(graph.size,adj_matrix, multiplied_matrix);
+                if (diff_matrix) free_matrix(diff_matrix, graph.size);
+
+                diff_matrix = diff(graph.size, adj_matrix, multiplied_matrix);
                 printf("\nDifference matrix computed successfully.\n");
                 print_matrix(sizeof diff_matrix, diff_matrix);
                 break;
@@ -172,6 +178,7 @@ int main() {
                         free(submatrix[i]);
                     }
                     free(submatrix);
+                    submatrix=NULL;
                 }
                 submatrix = subMatrix(adj_matrix, partition, compo_index);
                 printf("\nSubmatrix for component %d extracted successfully.\n", compo_index);
@@ -184,7 +191,73 @@ int main() {
                 print_hasse(&links);
                 break;
             }
-            case 12:
+            case 12: { // Or whatever number is next
+                if (graph.size == 0) {
+                    printf("Load the adjacency list first.\n");
+                    break;
+                }
+                generate_mermaid_file("graph.mmd", &graph);
+                printf("Content ready. Open 'graph.mmd' and copy to https://www.mermaidchart.com/\n");
+                break;
+            }
+            case 13: {
+                if (graph.size == 0) {
+                    printf("Load the adjacency list first.\n");
+                    break;
+                }
+
+                printf("\nVerifying Markov property...\n");
+                if (is_graph_markovian(&graph)) {
+                    printf("Success: The graph is Markovian (all rows sum to 1.0).\n");
+                } else {
+                    printf("Failure: The graph is NOT Markovian.\n");
+                }
+                break;
+            }
+            case 14: {
+                if (!adj_matrix) {
+                    printf("Create the adjacency matrix first.\n");
+                    break;
+                }
+                int n;
+                printf("Enter the number of steps (n): ");
+                scanf("%d", &n);
+
+                float proba_vector[] = {
+                        0.0, 0.2, 0.0, 0.0, 0.2,
+                        0.0, 0.0, 0.0, 0.0, 0.0,  // Indices 5-9   (States 6-10)
+                        0.0, 0.2, 0.0, 0.0, 0.0,  // Indices 10-14 (States 11-15)
+                        0.0, 0.0, 0.0, 0.0, 0.0,  // Indices 15-19 (States 16-20)
+                        0.2, 0.0, 0.0, 0.0, 0.2,  // Indices 20-24 (States 21-25)
+                        0.0, 0.0                  // Indices 25-26 (States 26-27)
+                };
+                if (sizeof(proba_vector) / sizeof(proba_vector[0]) != graph.size) {
+                    printf("Error: Hardcoded array size does not match the graph size.\n");
+                    break;
+                }
+                compute_distribution(graph.size, adj_matrix, proba_vector, n);
+
+                printf("\n--- Probability Distribution after %d steps ---\n", n);
+                printf("[ ");
+                for (int i = 0; i < graph.size; i++) {
+                    printf("%.4f; ", proba_vector[i]);
+                }
+                printf("]\n");
+
+                float max_p = -1.0f;
+                int max_idx = -1;
+                for (int i = 0; i < graph.size; i++) {
+                    if (proba_vector[i] > max_p) {
+                        max_p = proba_vector[i];
+                        max_idx = i;
+                    }
+                }
+                printf("Most likely location: Vertex %d (%.2f%%)\n", max_idx + 1, max_p * 100);
+
+                break;
+            }
+
+            case 15:
                 printf("Exiting program.\n");
                 return 0;
             default:

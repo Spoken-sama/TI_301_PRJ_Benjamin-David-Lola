@@ -11,6 +11,7 @@ float **multiply_n_times(int n, int size, float **matrix_b);
 float **diff(int size,float **matrix_a, float **matrix_b);
 void print_matrix(int size, float **matrix);
 t_matrix subMatrix(t_matrix matrix, t_partition part, int compo_index);
-
+void free_matrix(float **matrix, int size);
+void compute_distribution(int size, float **matrix, float *current_distribution, int n);
 
 #endif //INC_2526_TI301_PJT_MATRIX_H
