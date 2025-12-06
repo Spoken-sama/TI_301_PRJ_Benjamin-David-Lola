@@ -23,4 +23,6 @@ void add_link(t_link_array *link_array, int from, int to);
 int link_exists(t_link_array *link_array, int from, int to);
 t_link_array build_links(const t_adjacency_list *graph, const t_partition *partition);
 void print_hasse(const t_link_array *link_array);
+void generate_hasse_mermaid_file(const char *filename, const t_adjacency_list *graph, const t_partition *partition);
+void analyze_and_print_classes(const t_adjacency_list *graph, const t_partition *partition);
 #endif // UTILS_H

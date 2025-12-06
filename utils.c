@@ -4,7 +4,8 @@
 #include <string.h>
 #include "types.h"
 #include "math.h"
-
+#include "types.h"
+#include "utils.h"
 static char *getID(int i)
 {
     // translate from 1,2,3, .. ,500+ vertex A,B,C,..,Z,AA,AB,...
@@ -28,7 +29,14 @@ static char *getID(int i)
 
     return buffer;
 }
-
+int gcd(int a, int b) {
+    while (b) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
 void print_files_in_data_directory(const char *directory_path) {
     DIR *dir = opendir(directory_path);
     if (!dir) {
@@ -395,6 +403,147 @@ void print_t_partition(const t_partition *partition) {
     }
 }
 
+int is_persistent(const t_class *cls, const t_adjacency_list *graph) {
+    // 1. Create a quick lookup map for vertices in this class
+    int *in_class = (int *)calloc(graph->size, sizeof(int));
+    for (int i = 0; i < cls->size; i++) {
+        in_class[cls->vertices[i]->id] = 1;
+    }
+
+    int persistent = 1; // Assume true initially
+
+    // 2. Check every edge of every vertex in the class
+    for (int i = 0; i < cls->size; i++) {
+        int u = cls->vertices[i]->id;
+        cell *current = graph->lists[u].head;
+
+        while (current != NULL) {
+            // If an edge points to a vertex NOT in the class...
+            if (in_class[current->vertex] == 0) {
+                persistent = 0; // It is transient
+                break;
+            }
+            current = current->next;
+        }
+        if (!persistent) break;
+    }
+
+    free(in_class);
+    return persistent;
+}
+
+int compute_class_period(const t_class *cls, const t_adjacency_list *graph) {
+    if (cls->size == 1) {
+        cell *c = graph->lists[cls->vertices[0]->id].head;
+        while(c) {
+            if (c->vertex == cls->vertices[0]->id) return 1;
+            c = c->next;
+        }
+        return 1;
+    }
+    int *level = (int *)malloc(graph->size * sizeof(int));
+    for(int i=0; i<graph->size; i++) level[i] = -1; // -1 means unvisited
+
+    int *queue = (int *)malloc(cls->size * sizeof(int));
+    int head = 0, tail = 0;
+
+    int start_node = cls->vertices[0]->id;
+    level[start_node] = 0;
+    queue[tail++] = start_node;
+
+    int current_gcd = 0;
+
+    while (head < tail) {
+        int u = queue[head++];
+
+        cell *edge = graph->lists[u].head;
+        while (edge != NULL) {
+            int v = edge->vertex;
+
+            int v_in_class = 0;
+            for(int k=0; k<cls->size; k++) {
+                if(cls->vertices[k]->id == v) { v_in_class = 1; break; }
+            }
+
+            if (v_in_class) {
+                if (level[v] == -1) {
+                    level[v] = level[u] + 1;
+                    queue[tail++] = v;
+                } else {
+                    int diff = level[u] - level[v] + 1;
+                    if (diff < 0) diff = -diff;
+
+                    if (current_gcd == 0) current_gcd = diff;
+                    else current_gcd = gcd(current_gcd, diff);
+                }
+            }
+            edge = edge->next;
+        }
+    }
+
+    free(level);
+    free(queue);
+    return (current_gcd == 0) ? 1 : current_gcd;
+}
+
+void draw_class_graph(const t_class *cls, const t_adjacency_list *graph, int class_id) {
+    char filename[50];
+    sprintf(filename, "class_%d.mmd", class_id);
+
+    FILE *f = fopen(filename, "w");
+    if(!f) return;
+
+    fprintf(f, "---\nconfig:\n layout: elk\n theme: neo\n---\nflowchart LR\n");
+
+    // 1. Nodes
+    for(int i=0; i<cls->size; i++) {
+        // +1 for display
+        fprintf(f, "    N%d((%d))\n", cls->vertices[i]->id, cls->vertices[i]->id + 1);
+    }
+
+    // 2. Edges (Only internal ones)
+    for(int i=0; i<cls->size; i++) {
+        int u = cls->vertices[i]->id;
+        cell *curr = graph->lists[u].head;
+        while(curr) {
+            int v = curr->vertex;
+            // Check if v is also in class
+            int v_in_class = 0;
+            for(int k=0; k<cls->size; k++) {
+                if(cls->vertices[k]->id == v) { v_in_class = 1; break; }
+            }
+
+            if(v_in_class) {
+                fprintf(f, "    N%d -->|%.2f| N%d\n", u, curr->probability, v);
+            }
+            curr = curr->next;
+        }
+    }
+    fclose(f);
+    printf("    -> Graph generated: %s\n", filename);
+}
+
+void analyze_and_print_classes(const t_adjacency_list *graph, const t_partition *partition) {
+    printf("\n=== Analyzing Communicating Classes ===\n");
+
+    for (int i = 0; i < partition->size; i++) {
+        t_class *cls = &partition->classes[i];
+
+        printf("\n[Class %d] (Size: %d)\n", cls->id, cls->size);
+
+        int persistent = is_persistent(cls, graph);
+        printf("  - Type: %s\n", persistent ? "Persistent (Recurrent)" : "Transient");
+
+
+        int d = compute_class_period(cls, graph);
+        printf("  - Period: %d\n", d);
+        if (d == 1) printf("    (Aperiodic)\n");
+        else printf("    (Periodic)\n");
+
+        draw_class_graph(cls, graph, cls->id);
+    }
+    printf("\n=======================================\n");
+}
 
 
 // Optional Part 2
@@ -471,4 +620,74 @@ void print_hasse(const t_link_array *link_array) {
     for (int i = 0; i < link_array->size; i++) {
         printf("C%d --> C%d\n", link_array->links[i].from, link_array->links[i].to);
     }
+}
+void generate_hasse_mermaid_file(const char *filename, const t_adjacency_list *graph, const t_partition *partition) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        perror("Error opening file for writing");
+        return;
+    }
+
+
+    fprintf(file, "---\n");
+    fprintf(file, "config:\n");
+    fprintf(file, " layout: elk\n");
+    fprintf(file, " look: neo\n");
+    fprintf(file, "---\n");
+    fprintf(file, "flowchart TD\n");
+
+    int *vertex_to_class = (int *)malloc(graph->size * sizeof(int));
+    if (!vertex_to_class) {
+        fclose(file);
+        return;
+    }
+    for (int i = 0; i < partition->size; i++) {
+        for (int j = 0; j < partition->classes[i].size; j++) {
+            int v_id = partition->classes[i].vertices[j]->id;
+            vertex_to_class[v_id] = partition->classes[i].id;
+        }
+    }
+    for (int i = 0; i < partition->size; i++) {
+        int class_id = partition->classes[i].id;
+
+        fprintf(file, "    C%d[\"C%d: {", class_id, class_id);
+
+        for (int j = 0; j < partition->classes[i].size; j++) {
+            fprintf(file, "%d", partition->classes[i].vertices[j]->id + 1);
+            if (j < partition->classes[i].size - 1) {
+                fprintf(file, ", ");
+            }
+        }
+        fprintf(file, "}\"]\n");
+    }
+    int max_id = 0;
+    for(int i=0; i<partition->size; i++) {
+        if(partition->classes[i].id > max_id) max_id = partition->classes[i].id;
+    }
+    int matrix_size = max_id + 1;
+
+    char *link_matrix = (char *)calloc(matrix_size * matrix_size, sizeof(char));
+
+    for (int u = 0; u < graph->size; u++) {
+        int class_u = vertex_to_class[u];
+
+        cell *current = graph->lists[u].head;
+        while (current != NULL) {
+            int v = current->vertex;
+            int class_v = vertex_to_class[v];
+
+            if (class_u != class_v) {
+                if (link_matrix[class_u * matrix_size + class_v] == 0) {
+
+                    fprintf(file, "    C%d --> C%d\n", class_u, class_v);
+                    link_matrix[class_u * matrix_size + class_v] = 1;
+                }
+            }
+            current = current->next;
+        }
+    }
+    free(vertex_to_class);
+    free(link_matrix);
+    fclose(file);
+    printf("Hasse diagram generated: %s\n", filename);
 }

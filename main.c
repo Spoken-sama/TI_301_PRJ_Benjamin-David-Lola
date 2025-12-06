@@ -21,7 +21,9 @@ void display_menu() {
     printf("12. Build mermaid\n");
     printf("13. Verify Markov property\n");
     printf("14. Compute probability distribution after n steps\n");
-    printf("15. Exit\n");
+    printf("15. Generate Hasse diagram mermaid file\n");
+    printf("16. Analyze and print classes\n");
+    printf("17. Exit\n");
     printf("Enter your choice: ");
 }
 
@@ -256,8 +258,35 @@ int main() {
 
                 break;
             }
+            case 15: {
+                if (graph.size == 0) {
+                    printf("Load the graph first.\n");
+                    break;
+                }
+                if (partition.size == 0) {
+                    printf("Compute the Tarjan partition (Option 3) first.\n");
+                    break;
+                }
 
-            case 15:
+                generate_hasse_mermaid_file("hasse_diagram.mmd", &graph, &partition);
+                printf("File 'hasse_diagram.mmd' created. Copy content to https://mermaid.live/\n");
+                break;
+            }
+            case 16: {
+                if (graph.size == 0) {
+                    printf("Load the graph first.\n");
+                    break;
+                }
+                if (partition.size == 0) {
+                    printf("Compute the Tarjan partition (Option 3) first.\n");
+                    break;
+                }
+
+                analyze_and_print_classes(&graph, &partition);
+                break;
+            }
+
+            case 17:
                 printf("Exiting program.\n");
                 return 0;
             default:
